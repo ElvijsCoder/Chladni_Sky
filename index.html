@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planetary Frequencies & Cymatics</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Load Tone.js for Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <!-- Setup Three.js for Visuals -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- The canvas where the magic happens -->
+    <div id="canvas-container"></div>
+
+    <!-- Simple UI for testing -->
+    <div id="ui-panel">
+        <h2>Planet Frequencies</h2>
+        <button id="play-btn">Play Earth Day (194.18 Hz)</button>
+        <button id="stop-btn">Stop</button>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+    </div>
+
+    <!-- Your main script -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
