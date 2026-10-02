@@ -1,18 +1,24 @@
 import * as THREE from 'three';
 
 // --- 1. AUDIO ENGINE ---
-let synth;
+let synth = null;
 let isPlaying = false;
 
-function initAudio() {
-    synth = new Tone.Synth({
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.5, decay: 0.1, sustain: 1, release: 1 }
-    }).toDestination();
+async function initAudio() {
+    // Unlock the browser's audio context
+    await Tone.start();
+    
+    if (!synth) {
+        synth = new Tone.Synth({
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.5, decay: 0.1, sustain: 1, release: 1 }
+        }).toDestination();
+        synth.volume.value = -10; // Start at a safe volume
+    }
 }
 
 function playFrequency(freq) {
-    if (!synth) initAudio();
+    if (!synth) return;
     synth.triggerAttack(freq);
     isPlaying = true;
 }
@@ -32,7 +38,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
 
-// The Sharper Chladni Shader with Pause logic
+// The Sharper Chladni Shader
 const vertexShader = `
     varying vec2 vUv;
     void main() {
@@ -54,39 +60,38 @@ const fragmentShader = `
         float theta = atan(uv.y, uv.x);
 
         // --- CHLADNI FIGURE MATH ---
-        float n = uFrequency * 0.15; // Ring density
-        float m = uFrequency * 0.08; // Spoke density
+        // We use much higher multipliers to create dense, intricate patterns
+        float n = uFrequency * 0.2; // Ring density
+        float m = uFrequency * 0.1; // Spoke density
 
-        // Add a breathing effect
-        float breath = sin(uTime * 1.5) * 0.05;
-        n += breath;
-        m += breath;
-
-        // Create the nodal pattern
+        // Create the nodal pattern (interference of rings and spokes)
         float rings = cos(n * 3.14159 * r);
-        float spokes = sin(m * 3.14159 * theta);
+        float spokes = cos(m * 3.14159 * theta);
+        
+        // Absolute value creates bright lines where the waves cancel out (nodal lines)
         float pattern = abs(rings * spokes);
 
-        // Sharpen the lines
-        float line = smoothstep(0.15, 0.0, pattern);
+        // Sharpen the lines to make them glow intensely
+        float line = smoothstep(0.05, 0.0, pattern);
 
-        // Circular mask
+        // Circular mask (cuts off everything outside the plate)
         float mask = 1.0 - smoothstep(0.95, 1.0, r);
         
         // Central glow
         float glow = 1.0 - smoothstep(0.0, 0.4, r);
 
         // --- COLOR MAPPING ---
+        // Map frequency to a vibrant color
         float hue = fract(uFrequency * 0.002);
         vec3 color = vec3(0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
                           0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
                           0.5 + 0.5 * cos(6.28318 * (hue + 0.67)));
 
-        // Add a vibration effect ONLY when playing
-        float vibration = sin(uTime * 20.0) * 0.05 * uIsPlaying;
+        // Add a rapid vibration effect ONLY when playing
+        float vibration = sin(uTime * 30.0) * 0.03 * uIsPlaying;
         line += vibration;
 
-        // Combine
+        // Combine line, glow, and mask
         vec3 finalColor = color * (line * 2.5 + glow * 0.2) * mask;
         float alpha = (line + glow * 0.2) * mask;
 
@@ -101,7 +106,7 @@ const material = new THREE.ShaderMaterial({
     uniforms: {
         uFrequency: { value: 144.72 },
         uTime: { value: 0.0 },
-        uIsPlaying: { value: 0.0 } // 0.0 = false, 1.0 = true
+        uIsPlaying: { value: 0.0 }
     },
     transparent: true,
     blending: THREE.AdditiveBlending
@@ -112,12 +117,18 @@ scene.add(plane);
 
 // Animation Loop
 let visualTime = 0.0;
+let lastTime = performance.now();
+
 function animate() {
     requestAnimationFrame(animate);
     
-    // Only advance time when audio is playing
+    const now = performance.now();
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+
+    // Only advance time when audio is playing (freezes the pattern when stopped)
     if (isPlaying) {
-        visualTime += 0.016; // Approx 60fps step
+        visualTime += dt;
     }
     
     material.uniforms.uTime.value = visualTime;
@@ -139,13 +150,17 @@ const stopBtn = document.getElementById('stop-btn');
 const volumeSlider = document.getElementById('volume');
 
 function updateFrequency(freq) {
-    if (isPlaying) {
+    // Update Audio
+    if (isPlaying && synth) {
         synth.frequency.rampTo(freq, 0.5);
     }
+    // Update Visuals
     material.uniforms.uFrequency.value = freq;
 }
 
-playBtn.addEventListener('click', () => {
+// NOTE: We made this async to await the audio context unlock
+playBtn.addEventListener('click', async () => {
+    await initAudio(); // Unlock audio
     const freq = parseFloat(planetSelect.value);
     playFrequency(freq);
     updateFrequency(freq);
