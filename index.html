@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planetary Cymatics</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="gl"></canvas><canvas id="bloom"></canvas>
+<div id="hud"><div id="hz"></div><div id="sub"></div></div>
+<div id="panel">
+  <div id="chips"></div>
+  <div class="row">
+    <button id="play">▶ Play</button>
+    <div class="seg"><button id="om">−</button><span id="ol"></span><button id="op">+</button></div>
+    <button id="shape"></button><button id="view"></button><button id="bin"></button>
+    <button id="jr">Journey</button><button id="sc">Scatter</button><button id="shot">Capture</button>
+    <label>Vol <input id="vol" type="range" min="0" max="1" step=".01" value=".6"></label>
+    <span id="midi">MIDI · off</span>
+  </div>
+  <div id="info"></div>
+  <div id="keys">Space play · ←/→ planet · M shape · V view · B binaural · J journey · R scatter · F fullscreen · drag to tune (2D) or orbit (3D)</div>
+</div>
+<div id="msg"><div>This visualizer needs WebGL2 with float render targets.<br>Try a recent Chrome, Edge, Firefox or Safari on a device with a GPU.</div></div>
+<script src="script.js"></script>
+</body>
+</html>
