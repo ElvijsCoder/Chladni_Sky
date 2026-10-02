@@ -1,9 +1,15 @@
-body {
+* {
     margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
     overflow: hidden;
-    background-color: #050510; /* Deep cosmic dark */
+    background-color: #050510;
     font-family: system-ui, -apple-system, sans-serif;
     color: white;
+    user-select: none;
 }
 
 #canvas-container {
@@ -20,35 +26,87 @@ body {
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(15, 15, 25, 0.8);
-    backdrop-filter: blur(12px);
-    padding: 20px 30px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 15, 25, 0.85);
+    backdrop-filter: blur(20px);
+    padding: 25px 35px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 18px;
     align-items: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    transition: all 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(138, 43, 226, 0.1);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    max-width: 90vw;
+}
+
+#ui-panel.hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+    pointer-events: none;
 }
 
 h2 {
-    margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #888;
+    letter-spacing: 3px;
+    color: #666;
+    font-weight: 500;
 }
 
+/* Planet Preset Grid */
+#planet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+    width: 100%;
+    max-width: 700px;
+}
+
+.planet-btn {
+    background: rgba(26, 26, 46, 0.8);
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 6px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 11px;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.planet-btn:hover {
+    background: rgba(42, 42, 78, 0.9);
+    border-color: rgba(138, 43, 226, 0.5);
+    transform: translateY(-2px);
+}
+
+.planet-btn.active {
+    background: rgba(74, 42, 142, 0.9);
+    border-color: #8A2BE2;
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+    color: white;
+}
+
+.planet-btn .freq {
+    display: block;
+    font-size: 9px;
+    color: #888;
+    margin-top: 2px;
+}
+
+/* Main Controls */
 .controls {
     display: flex;
     gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-button, select {
+button {
     background: #1a1a2e;
     color: white;
     border: 1px solid #333;
@@ -56,10 +114,11 @@ button, select {
     border-radius: 10px;
     cursor: pointer;
     transition: 0.3s;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
 }
 
-button:hover, select:hover {
+button:hover {
     background: #2a2a4e;
     border-color: #555;
 }
@@ -73,4 +132,74 @@ button.active {
 input[type="range"] {
     accent-color: #8A2BE2;
     cursor: pointer;
+    width: 100px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-switch .slider {
+    width: 36px;
+    height: 20px;
+    background: #333;
+    border-radius: 20px;
+    position: relative;
+    transition: 0.3s;
+}
+
+.toggle-switch .slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: #666;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: 0.3s;
+}
+
+.toggle-switch input:checked + .slider {
+    background: #4a2a8e;
+}
+
+.toggle-switch input:checked + .slider::before {
+    background: #8A2BE2;
+    transform: translateX(16px);
+}
+
+/* MIDI Status */
+#midi-status {
+    font-size: 11px;
+    color: #555;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+#midi-status.connected {
+    color: #4aff9e;
+}
+
+/* Info Display */
+#info-display {
+    max-width: 500px;
+    text-align: center;
+}
+
+#info-text {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
 }
