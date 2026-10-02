@@ -25,7 +25,6 @@ function stopAudio() {
 // --- 2. VISUAL ENGINE (Three.js + Custom Shader) ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
-// Orthographic camera for full-screen 2D
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
 camera.position.z = 1;
 
@@ -33,7 +32,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
 
-// Updated Shader Code
+// The Sharper Chladni Shader with Pause logic
 const vertexShader = `
     varying vec2 vUv;
     void main() {
@@ -45,47 +44,53 @@ const vertexShader = `
 const fragmentShader = `
     uniform float uFrequency;
     uniform float uTime;
-    uniform float uAmplitude;
+    uniform float uIsPlaying;
     varying vec2 vUv;
 
     void main() {
-        // Center coordinates
-        vec2 uv = vUv - 0.5;
-        float r = length(uv) * 2.0;
+        // Center coordinates (range -1 to 1)
+        vec2 uv = vUv * 2.0 - 1.0;
+        float r = length(uv);
         float theta = atan(uv.y, uv.x);
 
         // --- CHLADNI FIGURE MATH ---
-        // Scale frequency to get the right number of rings and spokes
-        float n = uFrequency * 0.08; // Ring density
-        float m = uFrequency * 0.04; // Spoke density
+        float n = uFrequency * 0.15; // Ring density
+        float m = uFrequency * 0.08; // Spoke density
 
-        // Create the nodal pattern (interference of rings and spokes)
+        // Add a breathing effect
+        float breath = sin(uTime * 1.5) * 0.05;
+        n += breath;
+        m += breath;
+
+        // Create the nodal pattern
         float rings = cos(n * 3.14159 * r);
         float spokes = sin(m * 3.14159 * theta);
         float pattern = abs(rings * spokes);
 
-        // Sharpen the lines to make them glow
-        float line = smoothstep(0.05, 0.0, pattern);
+        // Sharpen the lines
+        float line = smoothstep(0.15, 0.0, pattern);
 
-        // Add a circular mask so it looks like a plate
-        float plateMask = smoothstep(0.95, 0.85, r);
-        line *= plateMask;
+        // Circular mask
+        float mask = 1.0 - smoothstep(0.95, 1.0, r);
+        
+        // Central glow
+        float glow = 1.0 - smoothstep(0.0, 0.4, r);
 
         // --- COLOR MAPPING ---
-        // Map frequency to a color (hue)
         float hue = fract(uFrequency * 0.002);
         vec3 color = vec3(0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
                           0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
                           0.5 + 0.5 * cos(6.28318 * (hue + 0.67)));
 
-        // Central glow
-        float glow = 1.0 - smoothstep(0.0, 0.9, r);
-        
-        // Combine line color with glow
-        vec3 finalColor = color * (line * 2.0 + glow * 0.15);
+        // Add a vibration effect ONLY when playing
+        float vibration = sin(uTime * 20.0) * 0.05 * uIsPlaying;
+        line += vibration;
 
-        // Output with transparency
-        gl_FragColor = vec4(finalColor, line + glow * 0.15);
+        // Combine
+        vec3 finalColor = color * (line * 2.5 + glow * 0.2) * mask;
+        float alpha = (line + glow * 0.2) * mask;
+
+        gl_FragColor = vec4(finalColor, alpha);
     }
 `;
 
@@ -94,31 +99,29 @@ const material = new THREE.ShaderMaterial({
     vertexShader: vertexShader,
     fragmentShader: fragmentShader,
     uniforms: {
-        uFrequency: { value: 194.18 },
+        uFrequency: { value: 144.72 },
         uTime: { value: 0.0 },
-        uAmplitude: { value: 1.0 }
+        uIsPlaying: { value: 0.0 } // 0.0 = false, 1.0 = true
     },
     transparent: true,
-    blending: THREE.AdditiveBlending // Creates the neon glow effect
+    blending: THREE.AdditiveBlending
 });
 
 const plane = new THREE.Mesh(geometry, material);
 scene.add(plane);
 
 // Animation Loop
-let clock = new THREE.Clock();
+let visualTime = 0.0;
 function animate() {
     requestAnimationFrame(animate);
     
-    const elapsedTime = clock.getElapsedTime();
-    material.uniforms.uTime.value = elapsedTime;
-
-    // Pulse when audio is playing
+    // Only advance time when audio is playing
     if (isPlaying) {
-        material.uniforms.uAmplitude.value = 1.0 + Math.sin(elapsedTime * 10) * 0.1;
-    } else {
-        material.uniforms.uAmplitude.value = 1.0;
+        visualTime += 0.016; // Approx 60fps step
     }
+    
+    material.uniforms.uTime.value = visualTime;
+    material.uniforms.uIsPlaying.value = isPlaying ? 1.0 : 0.0;
 
     renderer.render(scene, camera);
 }
@@ -136,11 +139,9 @@ const stopBtn = document.getElementById('stop-btn');
 const volumeSlider = document.getElementById('volume');
 
 function updateFrequency(freq) {
-    // Update Audio
     if (isPlaying) {
-        synth.frequency.rampTo(freq, 0.5); // Smooth glide
+        synth.frequency.rampTo(freq, 0.5);
     }
-    // Update Visuals
     material.uniforms.uFrequency.value = freq;
 }
 
