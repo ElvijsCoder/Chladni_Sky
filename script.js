@@ -25,7 +25,7 @@ function stopAudio() {
 // --- 2. VISUAL ENGINE (Three.js + Custom Shader) ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
-// Use Orthographic camera to make the 2D plane fill the screen perfectly
+// Orthographic camera for full-screen 2D
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
 camera.position.z = 1;
 
@@ -33,7 +33,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
 
-// The Shader Code
+// Updated Shader Code
 const vertexShader = `
     varying vec2 vUv;
     void main() {
@@ -49,41 +49,43 @@ const fragmentShader = `
     varying vec2 vUv;
 
     void main() {
-        // Center the coordinates
-        vec2 center = vec2(0.5, 0.5);
-        float dist = distance(vUv, center) * 2.0; // Normalize dist
-        float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
+        // Center coordinates
+        vec2 uv = vUv - 0.5;
+        float r = length(uv) * 2.0;
+        float theta = atan(uv.y, uv.x);
 
         // --- CHLADNI FIGURE MATH ---
-        // We use sine waves to create the nodal lines (rings and spokes)
-        // The frequency determines how many rings and spokes appear
-        float ringFreq = uFrequency * 0.05;
-        float spokeFreq = uFrequency * 0.02;
+        // Scale frequency to get the right number of rings and spokes
+        float n = uFrequency * 0.08; // Ring density
+        float m = uFrequency * 0.04; // Spoke density
 
-        // Create concentric rings
-        float rings = sin(dist * ringFreq - uTime * 2.0) * 0.5 + 0.5;
-        
-        // Create radial spokes
-        float spokes = sin(angle * spokeFreq + uTime) * 0.5 + 0.5;
+        // Create the nodal pattern (interference of rings and spokes)
+        float rings = cos(n * 3.14159 * r);
+        float spokes = sin(m * 3.14159 * theta);
+        float pattern = abs(rings * spokes);
 
-        // Combine them to create the mandala pattern
-        float pattern = rings * spokes;
+        // Sharpen the lines to make them glow
+        float line = smoothstep(0.05, 0.0, pattern);
 
-        // Sharpen the pattern to create distinct glowing lines
-        pattern = smoothstep(0.7, 1.0, pattern);
+        // Add a circular mask so it looks like a plate
+        float plateMask = smoothstep(0.95, 0.85, r);
+        line *= plateMask;
 
         // --- COLOR MAPPING ---
-        // Map frequency to a color (e.g., low freq = orange/red, high freq = blue/purple)
-        float hue = fract(uFrequency * 0.001); 
+        // Map frequency to a color (hue)
+        float hue = fract(uFrequency * 0.002);
         vec3 color = vec3(0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
                           0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
                           0.5 + 0.5 * cos(6.28318 * (hue + 0.67)));
 
-        // Add a central glow
-        float glow = 1.0 - smoothstep(0.0, 0.5, dist);
+        // Central glow
+        float glow = 1.0 - smoothstep(0.0, 0.9, r);
         
-        // Final output
-        gl_FragColor = vec4(color * pattern + color * glow * 0.3, pattern + glow * 0.3);
+        // Combine line color with glow
+        vec3 finalColor = color * (line * 2.0 + glow * 0.15);
+
+        // Output with transparency
+        gl_FragColor = vec4(finalColor, line + glow * 0.15);
     }
 `;
 
@@ -97,7 +99,7 @@ const material = new THREE.ShaderMaterial({
         uAmplitude: { value: 1.0 }
     },
     transparent: true,
-    blending: THREE.AdditiveBlending // Creates that glowing neon effect
+    blending: THREE.AdditiveBlending // Creates the neon glow effect
 });
 
 const plane = new THREE.Mesh(geometry, material);
@@ -111,7 +113,7 @@ function animate() {
     const elapsedTime = clock.getElapsedTime();
     material.uniforms.uTime.value = elapsedTime;
 
-    // Pulse the amplitude when audio is playing
+    // Pulse when audio is playing
     if (isPlaying) {
         material.uniforms.uAmplitude.value = 1.0 + Math.sin(elapsedTime * 10) * 0.1;
     } else {
@@ -136,7 +138,7 @@ const volumeSlider = document.getElementById('volume');
 function updateFrequency(freq) {
     // Update Audio
     if (isPlaying) {
-        synth.frequency.rampTo(freq, 0.5); // Smooth glide to new frequency
+        synth.frequency.rampTo(freq, 0.5); // Smooth glide
     }
     // Update Visuals
     material.uniforms.uFrequency.value = freq;
