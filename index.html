@@ -6,10 +6,8 @@
     <title>Planetary Frequencies & Cymatics</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- Load Tone.js for Audio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     
-    <!-- Setup Three.js for Visuals -->
     <script type="importmap">
         {
             "imports": {
@@ -20,18 +18,30 @@
     </script>
 </head>
 <body>
-    <!-- The canvas where the magic happens -->
     <div id="canvas-container"></div>
 
-    <!-- Simple UI for testing -->
     <div id="ui-panel">
-        <h2>Planet Frequencies</h2>
-        <button id="play-btn">Play Earth Day (194.18 Hz)</button>
-        <button id="stop-btn">Stop</button>
-        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+        <h2>Planetary Frequencies</h2>
+        <div class="controls">
+            <select id="planet-select">
+                <option value="194.18">Earth (Day) - 194.18 Hz</option>
+                <option value="210.42">Moon (Synodic) - 210.42 Hz</option>
+                <option value="136.10">Sun - 136.10 Hz</option>
+                <option value="141.27">Mercury - 141.27 Hz</option>
+                <option value="221.23">Venus - 221.23 Hz</option>
+                <option value="144.72">Mars - 144.72 Hz</option>
+                <option value="183.58">Jupiter - 183.58 Hz</option>
+                <option value="207.36">Saturn - 207.36 Hz</option>
+                <option value="211.44">Uranus - 211.44 Hz</option>
+                <option value="221.23">Neptune - 221.23 Hz</option>
+                <option value="140.25">Pluto - 140.25 Hz</option>
+            </select>
+            <button id="play-btn">Play</button>
+            <button id="stop-btn">Stop</button>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+        </div>
     </div>
 
-    <!-- Your main script -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
